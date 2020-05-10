@@ -2,10 +2,10 @@ package main
 
 import (
 	"archive/zip"
+	"bytes"
 	"encoding/csv"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 )
@@ -49,15 +49,18 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 	// defer os.RemoveAll("./webiner")
 
+	files := map[string]io.ReadWriter{}
 	// Write user information to a csv file for every 100 user.
 	for i, records := range unitRecords {
-		file, err := os.Create(filePath + fmt.Sprintf("attendees%v.csv", i+1))
-		if err != nil {
-			fmt.Printf("err: %v", err)
-		}
-		defer file.Close()
+		// file, err := os.Create(filePath + fmt.Sprintf("attendees%v.csv", i+1))
+		// if err != nil {
+		// 	fmt.Printf("err: %v", err)
+		// }
+		// defer file.Close()
+		fileName := filePath + fmt.Sprintf("attendees%v.csv", i+1)
+		files[fileName] = new(bytes.Buffer)
 
-		writer := csv.NewWriter(file)
+		writer := csv.NewWriter(files[fileName])
 		defer writer.Flush()
 
 		if err := writer.Write(newCSVHeader()); err != nil {
@@ -71,12 +74,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	zipWriter := zip.NewWriter(w)
 	defer zipWriter.Close()
 
-	files, err := ioutil.ReadDir("./webiner")
-	if err != nil {
-		panic(err)
-	}
-	for _, file := range files {
-		if err := addToZip(file.Name(), zipWriter); err != nil {
+	// files, err := ioutil.ReadDir("./webiner")
+	// if err != nil {
+	// 	panic(err)
+	// }
+	for i, file := range files {
+		if err := addToZip(i, file, zipWriter); err != nil {
 			panic(err)
 		}
 	}
@@ -107,14 +110,19 @@ func split(total []*Attendee, unit int) [][]*Attendee {
 	return result
 }
 
-func addToZip(name string, zipWriter *zip.Writer) error {
-	file, err := os.Open(fmt.Sprintf("./webiner/%v", name))
-	if err != nil {
-		return err
-	}
-	defer file.Close()
+func addToZip(name string, file io.ReadWriter, zipWriter *zip.Writer) error {
+	// file, err := os.Open(fmt.Sprintf("./webiner/%v", name))
+	// if err != nil {
+	// 	return err
+	// }
+	// defer file.Close()
 
-	// n, err := io.Copy(os.Stdout, file)
+	// b, err := ioutil.ReadFile(fmt.Sprintf("./webiner/%v", name))
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// n, err := io.Copy(os.Stdout, bytes.NewReader(b))
 	// if err != nil {
 	// 	panic(err)
 	// }
